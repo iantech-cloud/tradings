@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Flask Trading System{% endblock %}
+
+{% block content %}
+<!-- Complete redesign with professional trading dashboard layout -->
+<div class="p-6 space-y-6">
+    <!-- Key Performance Metrics -->
+    <div class="dashboard-grid">
+        <div class="metric-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-muted-foreground">Total P&L</p>
+                    <p class="text-2xl font-bold" id="total-pnl">$0.00</p>
+                </div>
+                <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-primary text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 flex items-center text-sm">
+                <span class="profit-positive" id="pnl-change">+0.00%</span>
+                <span class="text-muted-foreground ml-1">vs yesterday</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-muted-foreground">Win Rate</p>
+                    <p class="text-2xl font-bold" id="win-rate">0%</p>
+                </div>
+                <div class="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-target text-success text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 flex items-center text-sm">
+                <span id="win-rate-period">Last 24h</span>
+                <span class="text-muted-foreground ml-1">• <span id="total-trades">0</span> trades</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-muted-foreground">Active Signals</p>
+                    <p class="text-2xl font-bold" id="active-signals">0</p>
+                </div>
+                <div class="w-12 h-12 bg-chart-2/10 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-signal text-chart-2 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 flex items-center text-sm">
+                <span class="text-muted-foreground">Monitoring</span>
+                <span class="ml-1 font-medium" id="monitored-pairs">7 pairs</span>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-muted-foreground">System Status</p>
+                    <p class="text-2xl font-bold text-success" id="system-status-text">LIVE</p>
+                </div>
+                <div class="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-heartbeat text-success text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 flex items-center text-sm">
+                <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                <span class="text-muted-foreground ml-2">Uptime: <span id="uptime">24h 15m</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="chart-grid">
+        <!-- Performance Chart -->
+        <div class="trading-card">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-heading font-bold">Performance Overview</h3>
+                <div class="flex items-center space-x-2">
+                    <select id="performance-period" class="form-select text-sm">
+                        <option value="24h">24 Hours</option>
+                        <option value="7d">7 Days</option>
+                        <option value="30d">30 Days</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="performance-chart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Market Overview Chart -->
+        <div class="trading-card">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-heading font-bold">Market Overview</h3>
+                <div class="flex items-center space-x-2">
+                    <button class="btn-outline text-xs px-3 py-1" onclick="refreshMarketData()">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="space-y-3" id="market-overview">
+                <!-- Market data will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Signals and Analysis -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Recent Signals -->
+        <div class="xl:col-span-2 trading-card">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-heading font-bold">Recent Trading Signals</h3>
+                <a href="/signals" class="text-primary hover:text-primary/80 text-sm font-medium">
+                    View All <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="trading-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Symbol</th>
+                            <th>Signal</th>
+                            <th>Entry Price</th>
+                            <th>Confidence</th>
+                            <th>R:R</th>
+                            <th>Status</th>
+                            <th>P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-signals">
+                        <!-- Signals will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- AI Analysis & Market Sentiment -->
+        <div class="space-y-6">
+            <!-- Market Sentiment -->
+            <div class="trading-card">
+                <h3 class="text-lg font-heading font-bold mb-4">Market Sentiment</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Overall Trend</span>
+                        <span class="font-medium" id="market-trend">Bullish</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Volatility</span>
+                        <span class="font-medium" id="volatility-level">Medium</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Risk Level</span>
+                        <span class="font-medium text-warning" id="risk-level">Moderate</span>
+                    </div>
+                    <div class="pt-2 border-t border-border">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-muted-foreground">Next Signal ETA</span>
+                            <span class="font-medium text-primary" id="next-signal-eta">~3 min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Smart Money Analysis -->
+            <div class="trading-card">
+                <h3 class="text-lg font-heading font-bold mb-4">Smart Money Concepts</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Market Structure</span>
+                        <span class="signal-badge signal-buy text-xs">Bullish BOS</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Order Blocks</span>
+                        <span class="text-sm font-medium">3 Active</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Fair Value Gaps</span>
+                        <span class="text-sm font-medium">2 Unfilled</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">Liquidity Zones</span>
+                        <span class="text-sm font-medium text-warning">High Activity</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- API Status -->
+            <div class="trading-card">
+                <h3 class="text-lg font-heading font-bold mb-4">Data Sources</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-success rounded-full"></div>
+                            <span class="text-sm">Alpha Vantage</span>
+                        </div>
+                        <span class="text-xs text-muted-foreground">Connected</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-success rounded-full"></div>
+                            <span class="text-sm">Currency Layer</span>
+                        </div>
+                        <span class="text-xs text-muted-foreground">Connected</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-success rounded-full"></div>
+                            <span class="text-sm">Twelve Data</span>
+                        </div>
+                        <span class="text-xs text-muted-foreground">Connected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let performanceChart;
+let dashboardSocket;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboard();
+    setupRealTimeUpdates();
+    
+    // Refresh data every 30 seconds
+    setInterval(loadDashboardData, 30000);
+});
+
+function initializeDashboard() {
+    loadDashboardData();
+    initializePerformanceChart();
+    
+    // Setup period selector
+    document.getElementById('performance-period').addEventListener('change', function() {
+        updatePerformanceChart(this.value);
+    });
+}
+
+function setupRealTimeUpdates() {
+    if (typeof socket !== 'undefined') {
+        socket.on('dashboard_update', function(data) {
+            updateDashboardMetrics(data);
+        });
+        
+        socket.on('new_signal', function(signal) {
+            addNewSignalToTable(signal);
+            updateActiveSignalsCount();
+        });
+        
+        socket.on('market_data_update', function(data) {
+            updateMarketOverview(data);
+        });
+    }
+}
+
+async function loadDashboardData() {
+    try {
+        // Show loading states
+        showLoadingStates();
+        
+        // Load all dashboard data in parallel
+        const [signalsResponse, performanceResponse, marketResponse, statusResponse] = await Promise.all([
+            fetch('/api/signals?limit=10'),
+            fetch('/api/performance?period=24h'),
+            fetch('/api/market-overview'),
+            fetch('/api/system-status')
+        ]);
+        
+        const [signalsData, performanceData, marketData, statusData] = await Promise.all([
+            signalsResponse.json(),
+            performanceResponse.json(),
+            marketResponse.json(),
+            statusResponse.json()
+        ]);
+        
+        // Update dashboard components
+        if (signalsData.success) {
+            updateRecentSignals(signalsData.data);
+        }
+        
+        if (performanceData.success) {
+            updatePerformanceMetrics(performanceData);
+        }
+        
+        if (marketData.success) {
+            updateMarketOverview(marketData.data);
+        }
+        
+        if (statusData.success) {
+            updateSystemStatus(statusData.data);
+        }
+        
+        hideLoadingStates();
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        showErrorState();
+    }
+}
+
+function initializePerformanceChart() {
+    const ctx = document.getElementById('performance-chart').getContext('2d');
+    
+    performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Cumulative P&L',
+                data: [],
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour'
+                    },
+                    grid: {
+                        color: 'rgba(55, 65, 81, 0.3)'
+                    },
+                    ticks: {
+                        color: 'rgb(156, 163, 175)'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(55, 65, 81, 0.3)'
+                    },
+                    ticks: {
+                        color: 'rgb(156, 163, 175)',
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    radius: 0,
+                    hoverRadius: 6
+                }
+            }
+        }
+    });
+}
+
+function updateRecentSignals(signals) {
+    const tbody = document.getElementById('recent-signals');
+    tbody.innerHTML = '';
+    
+    signals.forEach(signal => {
+        const row = document.createElement('tr');
+        row.className = 'slide-in';
+        
+        const time = new Date(signal.timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        const pnlClass = getPnLClass(signal.pnl);
+        const pnlText = signal.pnl ? formatPnL(signal.pnl) : '--';
+        
+        row.innerHTML = `
+            <td class="text-xs text-muted-foreground">${time}</td>
+            <td class="font-medium">${signal.symbol}</td>
+            <td><span class="signal-badge ${getSignalBadgeClass(signal.signal_type)}">${signal.signal_type}</span></td>
+            <td class="font-mono text-sm">${formatCurrency(signal.entry_price)}</td>
+            <td>
+                <div class="flex items-center space-x-1">
+                    <div class="w-2 h-2 rounded-full ${signal.confidence >= 80 ? 'bg-success' : signal.confidence >= 60 ? 'bg-warning' : 'bg-muted-foreground'}"></div>
+                    <span class="text-sm">${signal.confidence}%</span>
+                </div>
+            </td>
+            <td class="text-sm">${signal.risk_reward_ratio ? '1:' + signal.risk_reward_ratio.toFixed(1) : '--'}</td>
+            <td><span class="signal-badge ${getStatusBadgeClass(signal.status)}">${signal.status}</span></td>
+            <td class="font-mono text-sm ${pnlClass}">${pnlText}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function updatePerformanceMetrics(data) {
+    document.getElementById('total-pnl').textContent = '$' + (data.total_pnl || 0).toFixed(2);
+    document.getElementById('win-rate').textContent = (data.win_rate || 0).toFixed(1) + '%';
+    document.getElementById('total-trades').textContent = data.total_trades || 0;
+    
+    // Update P&L change
+    const pnlChange = data.pnl_change || 0;
+    const pnlChangeElement = document.getElementById('pnl-change');
+    pnlChangeElement.textContent = (pnlChange >= 0 ? '+' : '') + pnlChange.toFixed(2) + '%';
+    pnlChangeElement.className = getPnLClass(pnlChange);
+    
+    // Update performance chart
+    if (performanceChart && data.chart_data) {
+        performanceChart.data.labels = data.chart_data.labels;
+        performanceChart.data.datasets[0].data = data.chart_data.values;
+        performanceChart.update('none');
+    }
+}
+
+function updateMarketOverview(marketData) {
+    const container = document.getElementById('market-overview');
+    
+    if (!marketData || !Array.isArray(marketData)) {
+        container.innerHTML = '<p class="text-muted-foreground text-sm">Loading market data...</p>';
+        return;
+    }
+    
+    container.innerHTML = marketData.map(item => {
+        const changeClass = item.change >= 0 ? 'profit-positive' : 'profit-negative';
+        const changeIcon = item.change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        return `
+            <div class="flex items-center justify-between p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <i class="fas fa-chart-line text-primary text-xs"></i>
+                    </div>
+                    <span class="font-medium">${item.symbol}</span>
+                </div>
+                <div class="text-right">
+                    <div class="font-mono font-bold">${formatCurrency(item.price, 5)}</div>
+                    <div class="flex items-center space-x-1 text-sm ${changeClass}">
+                        <i class="fas ${changeIcon} text-xs"></i>
+                        <span>${Math.abs(item.change).toFixed(2)}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateSystemStatus(statusData) {
+    document.getElementById('active-signals').textContent = statusData.active_signals || 0;
+    document.getElementById('uptime').textContent = statusData.uptime || 'N/A';
+    
+    // Update market sentiment
+    document.getElementById('market-trend').textContent = statusData.market_trend || 'Neutral';
+    document.getElementById('volatility-level').textContent = statusData.volatility_level || 'Medium';
+    document.getElementById('risk-level').textContent = statusData.risk_level || 'Moderate';
+    document.getElementById('next-signal-eta').textContent = statusData.next_signal_eta || '~5 min';
+}
+
+function addNewSignalToTable(signal) {
+    const tbody = document.getElementById('recent-signals');
+    const existingRows = tbody.children;
+    
+    // Remove last row if we have 10 or more
+    if (existingRows.length >= 10) {
+        tbody.removeChild(existingRows[existingRows.length - 1]);
+    }
+    
+    // Create new row
+    const row = document.createElement('tr');
+    row.className = 'slide-in';
+    
+    const time = new Date(signal.timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    row.innerHTML = `
+        <td class="text-xs text-muted-foreground">${time}</td>
+        <td class="font-medium">${signal.symbol}</td>
+        <td><span class="signal-badge ${getSignalBadgeClass(signal.signal_type)}">${signal.signal_type}</span></td>
+        <td class="font-mono text-sm">${formatCurrency(signal.entry_price)}</td>
+        <td>
+            <div class="flex items-center space-x-1">
+                <div class="w-2 h-2 rounded-full ${signal.confidence >= 80 ? 'bg-success' : signal.confidence >= 60 ? 'bg-warning' : 'bg-muted-foreground'}"></div>
+                <span class="text-sm">${signal.confidence}%</span>
+            </div>
+        </td>
+        <td class="text-sm">${signal.risk_reward_ratio ? '1:' + signal.risk_reward_ratio.toFixed(1) : '--'}</td>
+        <td><span class="signal-badge ${getStatusBadgeClass(signal.status)}">${signal.status}</span></td>
+        <td class="font-mono text-sm profit-neutral">--</td>
+    `;
+    
+    // Insert at the beginning
+    tbody.insertBefore(row, tbody.firstChild);
+}
+
+function getStatusBadgeClass(status) {
+    switch(status?.toLowerCase()) {
+        case 'active': return 'bg-chart-2/10 text-chart-2 border-chart-2/20';
+        case 'hit_tp': return 'signal-buy';
+        case 'hit_sl': return 'signal-sell';
+        case 'closed': return 'bg-muted/20 text-muted-foreground border-muted/20';
+        default: return 'bg-muted/20 text-muted-foreground border-muted/20';
+    }
+}
+
+function refreshMarketData() {
+    const button = event.target.closest('button');
+    const icon = button.querySelector('i');
+    
+    icon.classList.add('fa-spin');
+    
+    fetch('/api/market-overview')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMarketOverview(data.data);
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing market data:', error);
+        })
+        .finally(() => {
+            icon.classList.remove('fa-spin');
+        });
+}
+
+function updateActiveSignalsCount() {
+    fetch('/api/signals/active-count')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('active-signals').textContent = data.count;
+            }
+        })
+        .catch(error => {
+            console.error('Error updating active signals count:', error);
+        });
+}
+
+function showLoadingStates() {
+    // Add loading spinners or skeleton states
+    const loadingElements = document.querySelectorAll('[id$="-loading"]');
+    loadingElements.forEach(el => el.classList.remove('hidden'));
+}
+
+function hideLoadingStates() {
+    const loadingElements = document.querySelectorAll('[id$="-loading"]');
+    loadingElements.forEach(el => el.classList.add('hidden'));
+}
+
+function showErrorState() {
+    // Show error message to user
+    console.error('Dashboard data loading failed');
+}
+
+// Handle new signals from WebSocket
+function handleNewSignal(signal) {
+    addNewSignalToTable(signal);
+    updateActiveSignalsCount();
+    
+    // Show notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`New ${signal.signal_type} Signal`, {
+            body: `${signal.symbol} at ${formatCurrency(signal.entry_price)}`,
+            icon: '/static/favicon.ico'
+        });
+    }
+}
+
+// Handle market updates from WebSocket
+function handleMarketUpdate(data) {
+    updateMarketOverview(data.market_data);
+}
+</script>
+{% endblock %}

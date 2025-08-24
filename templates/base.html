@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flask Trading System{% endblock %}</title>
+    <!-- Updated to use custom CSS and professional fonts -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body class="bg-background text-foreground min-h-screen">
+    <!-- Professional trading dashboard header with dark theme -->
+    <header class="bg-card border-b border-border sticky top-0 z-50">
+        <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-chart-line text-primary text-2xl"></i>
+                    <h1 class="text-xl font-heading font-black text-foreground">Flask Trading System</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-1 ml-8">
+                    <div id="system-status" class="flex items-center space-x-2 px-3 py-1 rounded-full bg-success/10">
+                        <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                        <span class="text-sm text-success font-medium">LIVE</span>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="hidden lg:flex items-center space-x-1">
+                <a href="/" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/signals" class="nav-link {% if request.endpoint == 'signals' %}active{% endif %}">
+                    <i class="fas fa-signal"></i>
+                    <span>Signals</span>
+                </a>
+                <a href="/performance" class="nav-link {% if request.endpoint == 'performance' %}active{% endif %}">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="/journal" class="nav-link {% if request.endpoint == 'journal' %}active{% endif %}">
+                    <i class="fas fa-book"></i>
+                    <span>Journal</span>
+                </a>
+                <a href="/settings" class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
+                    <span id="current-time"></span>
+                </div>
+                <button class="lg:hidden p-2 rounded-lg hover:bg-muted" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <div id="mobile-menu" class="lg:hidden hidden border-t border-border">
+            <div class="px-6 py-4 space-y-2">
+                <a href="/" class="mobile-nav-link">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+                <a href="/signals" class="mobile-nav-link">
+                    <i class="fas fa-signal"></i>Signals
+                </a>
+                <a href="/performance" class="mobile-nav-link">
+                    <i class="fas fa-chart-bar"></i>Analytics
+                </a>
+                <a href="/journal" class="mobile-nav-link">
+                    <i class="fas fa-book"></i>Journal
+                </a>
+                <a href="/settings" class="mobile-nav-link">
+                    <i class="fas fa-cog"></i>Settings
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Professional footer with trading system branding -->
+    <footer class="bg-card border-t border-border mt-auto">
+        <div class="px-6 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+                <div class="text-sm text-muted-foreground">
+                    <p>&copy; 2024 Flask Trading System. Real-time signals with transparent reasoning.</p>
+                </div>
+                <div class="flex items-center space-x-4 text-sm text-muted-foreground">
+                    <span>API Status:</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-success rounded-full" title="Alpha Vantage"></div>
+                        <div class="w-2 h-2 bg-success rounded-full" title="Currency Layer"></div>
+                        <div class="w-2 h-2 bg-success rounded-full" title="Twelve Data"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Enhanced JavaScript utilities for trading dashboard -->
+    <script>
+        // Global JavaScript utilities for trading system
+        function formatCurrency(value, decimals = 5) {
+            if (value === null || value === undefined) return 'N/A';
+            return parseFloat(value).toFixed(decimals);
+        }
+        
+        function formatPercentage(value, decimals = 2) {
+            if (value === null || value === undefined) return 'N/A';
+            return (value * 100).toFixed(decimals) + '%';
+        }
+        
+        function formatPnL(value) {
+            if (value === null || value === undefined) return 'N/A';
+            const formatted = parseFloat(value).toFixed(2);
+            return value >= 0 ? `+${formatted}` : formatted;
+        }
+        
+        function getSignalColor(signalType) {
+            switch(signalType?.toUpperCase()) {
+                case 'BUY': return 'text-success';
+                case 'SELL': return 'text-danger';
+                case 'HOLD': return 'text-warning';
+                default: return 'text-muted-foreground';
+            }
+        }
+        
+        function getSignalBadgeClass(signalType) {
+            switch(signalType?.toUpperCase()) {
+                case 'BUY': return 'signal-buy';
+                case 'SELL': return 'signal-sell';
+                case 'HOLD': return 'signal-hold';
+                default: return 'bg-muted text-muted-foreground';
+            }
+        }
+        
+        function getPnLClass(value) {
+            if (value === null || value === undefined || value === 0) return 'profit-neutral';
+            return value > 0 ? 'profit-positive' : 'profit-negative';
+        }
+        
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                timeZone: 'UTC',
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }) + ' UTC';
+            
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+        
+        // Update time every second
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
+        
+        // Socket.IO connection for real-time updates
+        let socket;
+        if (typeof io !== 'undefined') {
+            socket = io();
+            
+            socket.on('connect', function() {
+                console.log('Connected to trading system');
+                updateSystemStatus('ONLINE');
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('Disconnected from trading system');
+                updateSystemStatus('OFFLINE');
+            });
+            
+            socket.on('new_signal', function(data) {
+                if (typeof handleNewSignal === 'function') {
+                    handleNewSignal(data);
+                }
+            });
+            
+            socket.on('market_update', function(data) {
+                if (typeof handleMarketUpdate === 'function') {
+                    handleMarketUpdate(data);
+                }
+            });
+        }
+        
+        function updateSystemStatus(status) {
+            const statusElement = document.getElementById('system-status');
+            if (statusElement) {
+                const dot = statusElement.querySelector('.w-2');
+                const text = statusElement.querySelector('span');
+                
+                if (status === 'ONLINE') {
+                    statusElement.className = 'flex items-center space-x-2 px-3 py-1 rounded-full bg-success/10';
+                    dot.className = 'w-2 h-2 bg-success rounded-full animate-pulse';
+                    text.className = 'text-sm text-success font-medium';
+                    text.textContent = 'LIVE';
+                } else {
+                    statusElement.className = 'flex items-center space-x-2 px-3 py-1 rounded-full bg-danger/10';
+                    dot.className = 'w-2 h-2 bg-danger rounded-full';
+                    text.className = 'text-sm text-danger font-medium';
+                    text.textContent = 'OFFLINE';
+                }
+            }
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
